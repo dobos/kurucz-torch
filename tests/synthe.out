@@ -1,0 +1,476 @@
+ NLINES=            52848881 LENGTH=             2009944 LINOUT=        -1
+ TEFF=    5770.0   GRAV= 4.440     B a s i c A T L A S                                                     
+      1029
+    1  VELOCITY SHIFT    0.000      0
+       NMERGE    EMERGE    EMERGEH
+  1    88.302    14.074    14.066
+  2    85.315    15.077    15.068
+  3    82.711    16.041    16.032
+  4    80.364    16.991    16.982
+  5    78.217    17.937    17.927
+  6    76.215    18.892    18.881
+  7    74.329    19.863    19.852
+  8    72.541    20.854    20.842
+  9    70.841    21.867    21.855
+ 10    69.219    22.904    22.891
+ 11    67.662    23.970    23.957
+ 12    66.166    25.066    25.052
+ 13    64.721    26.198    26.183
+ 14    63.320    27.370    27.355
+ 15    61.963    28.582    28.567
+ 16    60.636    29.846    29.830
+ 17    59.348    31.156    31.139
+ 18    58.091    32.519    32.501
+ 19    56.863    33.938    33.920
+ 20    55.666    35.413    35.394
+ 21    54.500    36.945    36.925
+ 22    53.360    38.541    38.520
+ 23    52.246    40.202    40.180
+ 24    51.156    41.933    41.910
+ 25    50.094    43.731    43.707
+ 26    49.050    45.611    45.586
+ 27    48.036    47.557    47.531
+ 28    47.045    49.581    49.554
+ 29    46.074    51.694    51.666
+ 30    45.126    53.888    53.859
+ 31    44.199    56.173    56.143
+ 32    43.293    58.550    58.518
+ 33    42.406    61.025    60.991
+ 34    41.539    63.599    63.565
+ 35    40.690    66.280    66.244
+ 36    39.858    69.075    69.038
+ 37    39.043    71.990    71.951
+ 38    38.244    75.030    74.989
+ 39    37.460    78.202    78.160
+ 40    36.690    81.517    81.473
+ 41    35.930    85.005    84.959
+ 42    35.183    88.650    88.601
+ 43    34.445    92.490    92.439
+ 44    33.714    96.545    96.493
+ 45    32.990   100.830   100.776
+ 46    32.268   105.394   105.336
+ 47    31.544   110.288   110.228
+ 48    30.813   115.581   115.518
+ 49    30.069   121.374   121.308
+ 50    29.299   127.837   127.768
+ 51    28.484   135.254   135.181
+ 52    27.589   144.171   144.093
+ 53    26.580   155.331   155.246
+ 54    25.417   169.869   169.776
+ 55    24.080   189.246   189.143
+ 56    22.572   215.390   215.273
+ 57    20.963   249.705   249.569
+ 58    19.301   294.561   294.400
+ 59    17.682   350.978   350.787
+ 60    16.344   410.816   410.592
+ 61    15.349   465.778   465.525
+ 62    14.604   514.540   514.260
+ 63    14.006   559.387   559.083
+ 64    13.514   600.839   600.512
+ 65    13.083   641.157   640.808
+ 66    12.705   679.876   679.506
+ 67    12.355   718.885   718.494
+ 68    12.038   757.295   756.883
+ 69    11.733   797.143   796.710
+ 70    11.453   836.554   836.098
+ 71    11.174   878.833   878.355
+ 72    10.923   919.694   919.194
+                                       1   2007620 LINES USED
+    2  VELOCITY SHIFT    0.000      0
+                                       2   2042878 LINES USED
+    3  VELOCITY SHIFT    0.000      0
+                                       3   2076069 LINES USED
+    4  VELOCITY SHIFT    0.000      0
+                                       4   2101432 LINES USED
+    5  VELOCITY SHIFT    0.000      0
+                                       5   2120224 LINES USED
+    6  VELOCITY SHIFT    0.000      0
+                                       6   2135140 LINES USED
+    7  VELOCITY SHIFT    0.000      0
+                                       7   2148255 LINES USED
+    8  VELOCITY SHIFT    0.000      0
+                                       8   2159895 LINES USED
+    9  VELOCITY SHIFT    0.000      0
+                                       9   2170720 LINES USED
+   10  VELOCITY SHIFT    0.000      0
+                                      10   2180097 LINES USED
+   11  VELOCITY SHIFT    0.000      0
+                                      11   2188238 LINES USED
+   12  VELOCITY SHIFT    0.000      0
+                                      12   2194735 LINES USED
+   13  VELOCITY SHIFT    0.000      0
+                                      13   2200017 LINES USED
+   14  VELOCITY SHIFT    0.000      0
+                                      14   2203781 LINES USED
+   15  VELOCITY SHIFT    0.000      0
+                                      15   2205329 LINES USED
+   16  VELOCITY SHIFT    0.000      0
+                                      16   2205173 LINES USED
+   17  VELOCITY SHIFT    0.000      0
+                                      17   2203492 LINES USED
+   18  VELOCITY SHIFT    0.000      0
+                                      18   2199938 LINES USED
+   19  VELOCITY SHIFT    0.000      0
+                                      19   2194641 LINES USED
+   20  VELOCITY SHIFT    0.000      0
+                                      20   2187692 LINES USED
+   21  VELOCITY SHIFT    0.000      0
+                                      21   2179502 LINES USED
+   22  VELOCITY SHIFT    0.000      0
+                                      22   2169369 LINES USED
+   23  VELOCITY SHIFT    0.000      0
+                                      23   2157938 LINES USED
+   24  VELOCITY SHIFT    0.000      0
+                                      24   2145475 LINES USED
+   25  VELOCITY SHIFT    0.000      0
+                                      25   2131753 LINES USED
+   26  VELOCITY SHIFT    0.000      0
+                                      26   2117275 LINES USED
+   27  VELOCITY SHIFT    0.000      0
+                                      27   2102635 LINES USED
+   28  VELOCITY SHIFT    0.000      0
+                                      28   2087815 LINES USED
+   29  VELOCITY SHIFT    0.000      0
+                                      29   2072780 LINES USED
+   30  VELOCITY SHIFT    0.000      0
+                                      30   2057650 LINES USED
+   31  VELOCITY SHIFT    0.000      0
+                                      31   2042135 LINES USED
+   32  VELOCITY SHIFT    0.000      0
+                                      32   2026304 LINES USED
+   33  VELOCITY SHIFT    0.000      0
+                                      33   2010637 LINES USED
+   34  VELOCITY SHIFT    0.000      0
+                                      34   1995678 LINES USED
+   35  VELOCITY SHIFT    0.000      0
+                                      35   1980726 LINES USED
+   36  VELOCITY SHIFT    0.000      0
+                                      36   1965564 LINES USED
+   37  VELOCITY SHIFT    0.000      0
+                                      37   1950288 LINES USED
+   38  VELOCITY SHIFT    0.000      0
+                                      38   1934409 LINES USED
+   39  VELOCITY SHIFT    0.000      0
+                                      39   1917567 LINES USED
+   40  VELOCITY SHIFT    0.000      0
+                                      40   1898428 LINES USED
+   41  VELOCITY SHIFT    0.000      0
+                                      41   1877718 LINES USED
+   42  VELOCITY SHIFT    0.000      0
+                                      42   1854514 LINES USED
+   43  VELOCITY SHIFT    0.000      0
+                                      43   1828673 LINES USED
+   44  VELOCITY SHIFT    0.000      0
+                                      44   1798428 LINES USED
+   45  VELOCITY SHIFT    0.000      0
+                                      45   1762062 LINES USED
+   46  VELOCITY SHIFT    0.000      0
+                                      46   1717193 LINES USED
+   47  VELOCITY SHIFT    0.000      0
+                                      47   1664593 LINES USED
+   48  VELOCITY SHIFT    0.000      0
+                                      48   1600129 LINES USED
+   49  VELOCITY SHIFT    0.000      0
+                                      49   1522064 LINES USED
+   50  VELOCITY SHIFT    0.000      0
+                                      50   1429069 LINES USED
+   51  VELOCITY SHIFT    0.000      0
+                                      51   1320045 LINES USED
+   52  VELOCITY SHIFT    0.000      0
+                                      52   1190925 LINES USED
+   53  VELOCITY SHIFT    0.000      0
+                                      53   1051795 LINES USED
+   54  VELOCITY SHIFT    0.000      0
+                                      54    904267 LINES USED
+   55  VELOCITY SHIFT    0.000      0
+                                      55    754134 LINES USED
+   56  VELOCITY SHIFT    0.000      0
+                                      56    616233 LINES USED
+   57  VELOCITY SHIFT    0.000      0
+                                      57    504811 LINES USED
+   58  VELOCITY SHIFT    0.000      0
+                                      58    417784 LINES USED
+   59  VELOCITY SHIFT    0.000      0
+                                      59    353370 LINES USED
+   60  VELOCITY SHIFT    0.000      0
+                                      60    311600 LINES USED
+   61  VELOCITY SHIFT    0.000      0
+                                      61    284205 LINES USED
+   62  VELOCITY SHIFT    0.000      0
+                                      62    264648 LINES USED
+   63  VELOCITY SHIFT    0.000      0
+                                      63    248919 LINES USED
+   64  VELOCITY SHIFT    0.000      0
+                                      64    236761 LINES USED
+   65  VELOCITY SHIFT    0.000      0
+                                      65    226119 LINES USED
+   66  VELOCITY SHIFT    0.000      0
+                                      66    217299 LINES USED
+   67  VELOCITY SHIFT    0.000      0
+                                      67    209254 LINES USED
+   68  VELOCITY SHIFT    0.000      0
+                                      68    202265 LINES USED
+   69  VELOCITY SHIFT    0.000      0
+                                      69    195803 LINES USED
+   70  VELOCITY SHIFT    0.000      0
+                                      70    189664 LINES USED
+   71  VELOCITY SHIFT    0.000      0
+                                      71    183973 LINES USED
+   72  VELOCITY SHIFT    0.000      0
+                                      72    179014 LINES USED
+ 111186625
+         1
+         2
+         3
+         4
+         5
+         6
+         7
+         8
+         9
+        10
+        11
+        12
+        13
+        14
+        15
+        16
+        17
+        18
+        19
+        20
+        21
+        22
+        23
+        24
+        25
+        26
+        27
+        28
+        29
+        30
+        31
+        32
+        33
+        34
+        35
+        36
+        37
+        38
+        39
+        40
+        41
+        42
+        43
+        44
+        45
+        46
+        47
+        48
+        49
+        50
+        51
+        52
+        53
+        54
+        55
+        56
+        57
+        58
+        59
+        60
+        61
+        62
+        63
+        64
+        65
+        66
+        67
+        68
+        69
+        70
+        71
+        72
+        73
+        74
+        75
+        76
+        77
+        78
+        79
+        80
+        81
+        82
+        83
+        84
+        85
+        86
+        87
+        88
+        89
+        90
+        91
+        92
+        93
+        94
+        95
+        96
+        97
+        98
+        99
+       100
+       101
+       102
+       103
+       104
+       105
+       106
+       107
+       108
+       109
+       110
+       111
+       112
+       113
+       114
+       115
+       116
+       117
+       118
+       119
+       120
+       121
+       122
+       123
+       124
+       125
+       126
+       127
+       128
+       129
+       130
+       131
+       132
+       133
+       134
+       135
+       136
+       137
+       138
+       139
+       140
+       141
+       142
+       143
+       144
+       145
+       146
+       147
+       148
+       149
+       150
+       151
+       152
+       153
+       154
+       155
+       156
+       157
+       158
+       159
+       160
+       161
+       162
+       163
+       164
+       165
+       166
+       167
+       168
+       169
+       170
+       171
+       172
+       173
+       174
+       175
+       176
+       177
+       178
+       179
+       180
+       181
+       182
+       183
+       184
+       185
+       186
+       187
+       188
+       189
+       190
+       191
+       192
+       193
+       194
+       195
+       196
+       197
+       198
+       199
+       200
+       201
+       202
+       203
+       204
+       205
+       206
+       207
+       208
+       209
+       210
+       211
+       212
+       213
+       214
+       215
+       216
+       217
+       218
+       219
+       220
+       221
+       222
+       223
+       224
+       225
+       226
+       227
+       228
+       229
+       230
+       231
+       232
+       233
+       234
+       235
+       236
+       237
+       238
+       239
+       240
+       241
+       242
+       243
+       244
+       245
+       246
+       247
+       248
+       249
+       250
+       251
+       252
+   2009944 OPACITY VECTORS ON TAPE 9 
+ NLINES=            52853670 LINOUT=        -1
+ N9=         0

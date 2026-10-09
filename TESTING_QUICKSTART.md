@@ -1,41 +1,61 @@
 # Testing QuickStart Guide
 
 ## Run All Tests
+
+Using the test runner script:
 ```bash
 cd /home/dobos/project/kurucz-torch
-/srv/local/tmp/dobos/gapipe/stack/conda/envs/kurucz-torch/bin/python -m pytest tests/test_atlas_model_reader.py -v
+./run_tests.sh
+```
+
+Or with Python directly:
+```bash
+export PYTHONPATH=/home/dobos/project/kurucz-torch/python
+python -m unittest discover tests/kurucz -v
+```
+
+## Run Specific Test Module
+
+```bash
+# CardReader tests only
+./run_tests.sh kurucz.compat.test_card_reader -v
+
+# AtlasModelReader tests only
+./run_tests.sh kurucz.compat.test_model_reader -v
+
+# Atmosphere tests only
+./run_tests.sh kurucz.test_atmosphere -v
 ```
 
 ## Run Specific Test Class
+
 ```bash
-# CardReader tests only
-python -m pytest tests/test_atlas_model_reader.py::TestCardReader -v
-
-# AtlasModelReader tests only
-python -m pytest tests/test_atlas_model_reader.py::TestAtlasModelReader -v
-
-# Integration tests only
-python -m pytest tests/test_atlas_model_reader.py::TestIntegration -v
+./run_tests.sh kurucz.compat.test_card_reader.CardReaderTests -v
+./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderTests -v
+./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderIntegrationTests -v
 ```
 
 ## Run Single Test
+
 ```bash
 # Test TEFF field parsing
-python -m pytest tests/test_atlas_model_reader.py::TestAtlasModelReader::test_read_model_teff -v
+./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderTests.test_read_model_teff -v
 
 # Test gravity conversion
-python -m pytest tests/test_atlas_model_reader.py::TestAtlasModelReaderEdgeCases::test_gravity_log_scale_conversion -v
+./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderEdgeCaseTests.test_gravity_log_scale_conversion -v
 ```
 
 ## View Test Results Summary
+
 ```bash
-python -m pytest tests/test_atlas_model_reader.py -v --tb=line
+./run_tests.sh kurucz 2>&1 | tail -5
 ```
 
 ## Test Your Changes
+
 After modifying the reader implementation:
 ```bash
-python -m pytest tests/test_atlas_model_reader.py -v
+./run_tests.sh kurucz
 ```
 
 If any test fails, the output shows:
@@ -62,62 +82,86 @@ tests/test_input_standard.txt
 - Integration testing
 ```
 
+## Test Directory Structure
+
+```
+tests/
+├── kurucz/                           # Matches python/kurucz/
+│   ├── compat/                       # Matches python/kurucz/compat/
+│   │   ├── test_card_reader.py      # Tests for card_reader.py
+│   │   ├── test_model_reader.py     # Tests for model_reader.py
+│   │   └── __init__.py
+│   ├── test_atmosphere.py            # Tests for atmosphere.py
+│   └── __init__.py
+├── test_input_minimal.txt            # 3-layer test fixture
+└── test_input_standard.txt           # 12-layer test fixture
+```
+
 ## Common Patterns
 
 ### Test a new keyword handler
+
 1. Add test input to test_input_minimal.txt or create new file
-2. Add test method to TestAtlasModelReader class:
+2. Add test method to appropriate class in test_model_reader.py:
    ```python
    def test_read_model_my_keyword(self):
        reader = AtlasModelReader()
        atm = reader.read_model("tests/test_input_minimal.txt")
-       assert atm.MY_FIELD == expected_value
+       self.assertEqual(atm.MY_FIELD, expected_value)
    ```
-3. Run: `python -m pytest tests/test_atlas_model_reader.py::TestAtlasModelReader::test_read_model_my_keyword -v`
+3. Run: `./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderTests.test_read_model_my_keyword -v`
 
 ### Debug a failing test
-```bash
-# Run with detailed output
-python -m pytest tests/test_atlas_model_reader.py::ClassName::test_name -vv
 
-# Run with full traceback
-python -m pytest tests/test_atlas_model_reader.py::ClassName::test_name -vv --tb=long
-```
-
-### Profile test performance
 ```bash
-# Time individual tests
-python -m pytest tests/test_atlas_model_reader.py -v --durations=10
+# Run with verbose output
+./run_tests.sh kurucz.compat.test_model_reader -v
+
+# Run specific failing test with full output
+./run_tests.sh kurucz.compat.test_model_reader.AtlasModelReaderTests.test_name -v 2>&1
 ```
 
 ## Expected Output
 
-### Success (all 35 tests pass)
+### Success (all tests pass)
 ```
-============================== 35 passed in 0.76s ==============================
+Ran 54 tests in 4.923s
+
+OK
 ```
 
 ### Failure
 ```
-FAILED tests/test_atlas_model_reader.py::TestClass::test_name
-AssertionError: assert 5777.0 == 5777.1
-  +  where 5777.0 = atm.TEFF
+FAIL: test_read_model_teff (kurucz.compat.test_model_reader.AtlasModelReaderTests)
+Test that TEFF is correctly read
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "tests/kurucz/compat/test_model_reader.py", line XX, in test_read_model_teff
+    self.assertEqual(atm.TEFF, 5777.0)
+AssertionError: 5777.0 != 5777.1
+
+----------------------------------------------------------------------
+Ran 54 tests in 4.923s
+
+FAILED (failures=1)
 ```
 
 ## Test Metrics
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 35 |
+| Total Tests | 54 |
 | Pass Rate | 100% |
-| Execution Time | ~0.76 seconds |
-| Test Classes | 6 |
-| Lines of Test Code | 413 |
+| Execution Time | ~4.9s |
+| AtlasModelReader Tests | 35 |
+| Other Tests | 19 |
+| Test Modules | 3 |
+| Lines of Test Code | ~600 |
 | Test Data Files | 2 |
 
 ## What's Tested
 
-✅ **CardReader**
+✅ **CardReader** (tests/kurucz/compat/test_card_reader.py)
 - Line reading and buffering
 - Keyword extraction (single/compound)
 - Float parsing (decimal/scientific)
@@ -125,7 +169,7 @@ AssertionError: assert 5777.0 == 5777.1
 - Integer parsing
 - Empty line handling
 
-✅ **AtlasModelReader**
+✅ **AtlasModelReader** (tests/kurucz/compat/test_model_reader.py)
 - File I/O and error handling
 - Keyword dispatch
 - Field validation
@@ -133,7 +177,7 @@ AssertionError: assert 5777.0 == 5777.1
 - Array parsing and storage
 - Reader reusability
 
-✅ **Atmosphere**
+✅ **Atmosphere** (tests/kurucz/test_atmosphere.py)
 - Object creation
 - Array fields
 - Optional defaults
@@ -146,56 +190,79 @@ AssertionError: assert 5777.0 == 5777.1
 
 ## Environment Setup
 
-If pytest is not installed:
-```bash
-/srv/local/tmp/dobos/gapipe/stack/conda/envs/kurucz-torch/bin/python -m pip install pytest
-```
+The test runner script automatically handles PYTHONPATH setup.
 
-Verify pytest:
+To verify unittest is working:
 ```bash
-/srv/local/tmp/dobos/gapipe/stack/conda/envs/kurucz-torch/bin/python -m pytest --version
+python -m unittest --version
 ```
 
 ## Troubleshooting
 
-### "No module named pytest"
+### "No module named kurucz"
+Make sure PYTHONPATH includes the python directory:
 ```bash
-/srv/local/tmp/dobos/gapipe/stack/conda/envs/kurucz-torch/bin/python -m pip install pytest
+export PYTHONPATH=/home/dobos/project/kurucz-torch/python
 ```
 
-### "No module named kurucz"
+Or use the provided test runner:
 ```bash
-cd /home/dobos/project/kurucz-torch
-# Ensure python path includes the project directory
+./run_tests.sh
+```
+
+### "Permission denied" on run_tests.sh
+Make the script executable:
+```bash
+chmod +x run_tests.sh
 ```
 
 ### Test hangs or takes too long
-- Comment out torch imports in atmosphere.py (torch may hang on Python 3.6)
 - Use minimal test file: `tests/test_input_minimal.txt`
+- Run specific test module: `./run_tests.sh kurucz.compat.test_card_reader`
 
 ### Floating-point assertion errors
-Use approximate comparison:
+unittest's assertAlmostEqual handles this:
 ```python
-# Instead of:
-assert value == expected  # May fail due to FP precision
-
-# Use:
-assert abs(value - expected) < tolerance
+self.assertAlmostEqual(value, expected, places=2)
 ```
+
+## Framework Comparison: unittest vs pytest
+
+| Feature | unittest | pytest |
+|---------|----------|--------|
+| Standard Library | ✅ Yes | ❌ No |
+| Matchers | Limited | Extensive |
+| Fixtures | `setUp`/`tearDown` | `@pytest.fixture` |
+| Parametrization | Limited | `@pytest.mark.parametrize` |
+| Plugins | Few | Many |
+| Async Support | ✅ Yes | ✅ Yes |
+
+We chose **unittest** for:
+1. Part of Python standard library (no external dependencies)
+2. Class-based structure matching namespace hierarchy
+3. Familiar to Java developers (JUnit-like)
+4. Strong type checking support with IDE integration
 
 ## References
 
 - **Full Documentation**: `UNIT_TEST_DOCUMENTATION.md`
-- **Test Implementation**: `tests/test_atlas_model_reader.py`
-- **CardReader**: `python/kurucz/compat/card_reader.py`
-- **AtlasModelReader**: `python/kurucz/compat/model_reader.py`
-- **Atmosphere**: `python/kurucz/atmosphere.py`
+- **Test Implementations**: 
+  - `tests/kurucz/compat/test_card_reader.py`
+  - `tests/kurucz/compat/test_model_reader.py`
+  - `tests/kurucz/test_atmosphere.py`
+- **Source Code**: 
+  - `python/kurucz/compat/card_reader.py`
+  - `python/kurucz/compat/model_reader.py`
+  - `python/kurucz/atmosphere.py`
+- **Test Runner**: `run_tests.sh`
 
 ## Quick Links
 
 ```bash
-# View test file
-cat tests/test_atlas_model_reader.py
+# View test files
+cat tests/kurucz/compat/test_card_reader.py
+cat tests/kurucz/compat/test_model_reader.py
+cat tests/kurucz/test_atmosphere.py
 
 # View test data
 cat tests/test_input_minimal.txt
