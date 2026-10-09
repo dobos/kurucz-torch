@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../BasicATLAS"
+		},
+		{
+			"path": "../../ATLAS_sun_model"
+		}
+	],
+	"settings": {
+		"python.defaultInterpreterPath": "/srv/local/tmp/dobos/gapipe/stack/conda/envs/kurucz-torch/bin/python"
+	}
+}

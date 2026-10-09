@@ -1,0 +1,14 @@
+TEFF     5777.0
+GRAVITY  4.43
+TITLE Solar Model (G2V) - Test File                                      
+LTE
+CHANGE RHOX
+3
+  1.00e-10  1.20e-10  1.44e-10
+READ T
+  3800.0  3900.0  4000.0
+READ P
+  1.00e+01  1.10e+01  1.21e+01
+READ XNE
+  1.00e+08  1.10e+08  1.21e+08
+END
