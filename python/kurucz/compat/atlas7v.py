@@ -6,14 +6,8 @@ atmosphere models.
 """
 
 from typing import Union, TextIO
-import sys
-from pathlib import Path
-
-# Add parent directory to path to import model_reader
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from model_reader import AtlasModelReader
-from atmosphere import Atmosphere
+from .model_reader import AtlasModelReader
+from ..atmosphere import Atmosphere
 
 
 class Atlas7v:

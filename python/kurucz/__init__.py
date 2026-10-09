@@ -6,14 +6,18 @@ and spectral synthesis using the ATLAS/SYNTHE system.
 
 Main classes:
 - Atmosphere: Stellar atmospheric structure from ATLAS READIN
-- CardReader: Parser for ATLAS input card deck files
-- AtlasModelReader: Main reader for ATLAS model files
+- Atlas7v: High-level compatibility wrapper for reading ATLAS models
+- CardReader: Low-level parser for ATLAS input card deck files
+- AtlasModelReader: Main reader implementation for ATLAS card decks
 """
 
 # Core ATLAS functionality
 from .atmosphere import Atmosphere
-from .card_reader import CardReader
-from .model_reader import AtlasModelReader
+
+# Compatibility layer
+from .compat.atlas7v import Atlas7v
+from .compat.card_reader import CardReader
+from .compat.model_reader import AtlasModelReader
 
 # Auxiliary modules (import on demand if needed)
 # from .line_data import ...
@@ -24,6 +28,7 @@ from .model_reader import AtlasModelReader
 
 __all__ = [
     "Atmosphere",
+    "Atlas7v",
     "CardReader",
     "AtlasModelReader",
 ]

@@ -13,7 +13,7 @@ implementing Phase 2-5 of the READIN reader:
 from typing import Optional, List, Union, TextIO
 import math
 from .card_reader import CardReader
-from .atmosphere import Atmosphere
+from ..atmosphere import Atmosphere
 
 # Lazy import torch only when needed
 # NOTE: On Python 3.6, torch import may hang indefinitely, so we skip it
