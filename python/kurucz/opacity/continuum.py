@@ -41,6 +41,52 @@ class ContinuumOpacity:
     # Number of depth points (inferred from data)
     NRHOX: int = 0
     
+    # Interpolation coefficients (computed in update())
+    # Midpoint wavelengths between edges. Shape: (NEDGE-1,)
+    HALFEDGE: Optional[torch.Tensor] = None
+    
+    # Squared wavelength differences for interpolation. Shape: (NEDGE-1,)
+    DELEDGE: Optional[torch.Tensor] = None
+    
+    def update(self):
+        """Compute wavelength edge processing and interpolation coefficients.
+        
+        Implements Fortran spectrv.patched.for lines 145-151:
+        1. Take absolute values of wavelengths
+        2. Compute midpoints between consecutive wavelength edges (HALFEDGE)
+        3. Compute squared wavelength differences (DELEDGE) for interpolation
+        """
+        import numpy as np
+        
+        if self.WLEDGE is None or self.NEDGE == 0:
+            return
+        
+        # Convert to numpy for manipulation, then back to tensor
+        wledge_np = self.WLEDGE.numpy() if isinstance(self.WLEDGE, torch.Tensor) else np.array(self.WLEDGE)
+        
+        # Take absolute values of wavelengths (Fortran line 145)
+        wledge_np[0] = abs(wledge_np[0])
+        for iedge in range(1, self.NEDGE):
+            wledge_np[iedge] = abs(wledge_np[iedge])
+        
+        self.WLEDGE = torch.from_numpy(wledge_np)
+        
+        # Compute HALFEDGE and DELEDGE (Fortran lines 146-150)
+        halfedge_list = []
+        deledge_list = []
+        
+        for iedge in range(1, self.NEDGE):
+            # HALFEDGE(IEDGE-1) = (WLEDGE(IEDGE-1) + WLEDGE(IEDGE)) * 0.5
+            halfedge = (float(wledge_np[iedge-1]) + float(wledge_np[iedge])) * 0.5
+            halfedge_list.append(halfedge)
+            
+            # DELEDGE(IEDGE-1) = (WLEDGE(IEDGE) - WLEDGE(IEDGE-1))**2 * 0.5
+            deledge = (float(wledge_np[iedge]) - float(wledge_np[iedge-1])) ** 2 * 0.5
+            deledge_list.append(deledge)
+        
+        self.HALFEDGE = torch.tensor(halfedge_list, dtype=torch.float64)
+        self.DELEDGE = torch.tensor(deledge_list, dtype=torch.float64)
+    
     def to(self, device: str) -> 'ContinuumOpacity':
         """Move all torch tensors to specified device.
         
@@ -62,4 +108,8 @@ class ContinuumOpacity:
             self.CONTABS = self.CONTABS.to(device)
         if self.CONTSCAT is not None:
             self.CONTSCAT = self.CONTSCAT.to(device)
+        if self.HALFEDGE is not None:
+            self.HALFEDGE = self.HALFEDGE.to(device)
+        if self.DELEDGE is not None:
+            self.DELEDGE = self.DELEDGE.to(device)
         return self

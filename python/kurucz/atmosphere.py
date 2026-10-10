@@ -10,15 +10,9 @@ indicating their physical meaning, matching Fortran COMMON blocks.
 
 from dataclasses import dataclass
 from typing import Optional
-
-# Lazy import torch only when needed (to avoid import issues on Python 3.6)
-torch = None
-
-def _ensure_torch():
-    global torch
-    if torch is None:
-        import torch
-    return torch
+import numpy as np
+import torch
+from .physics import Physics
 
 
 @dataclass
@@ -127,4 +121,65 @@ class Atmosphere:
     # ========== Configuration and metadata ==========
     TITLE: Optional[str] = None  # Model title/description. Shape: 74 characters
     NUMITS: int = 0  # Maximum iterations for model calculation (from COMMON /ITER/)
+    
+    # ========== Physics Calculations ==========
+    
+    def update(self):
+        """Compute all derived quantities from raw input data.
+        
+        This method performs calculations based on the raw parameters read from
+        the input file. It should be called after the file parser has populated
+        the raw fields.
+        
+        Calculations performed (Fortran atlas7v.for reference):
+        1. RHOX log-to-linear conversion if RHOX(1) < 0 (line 1142)
+        2. Gravity conversion: if GRAV < 10, convert from log scale (line 200-208)
+        3. Gravity log: GLOG = log10(GRAV) (line 208)
+        4. Stefan-Boltzmann flux from effective temperature (line 100)
+        5. Initialize scalar pressure parameters: PRADK0, PCON, PTURB0, PZER0 (lines 1143-1145)
+        6. Per-depth radiation pressure (PRADK) from PRAD and PRADK0 (line 1145)
+        
+        Uses numpy for calculations and torch for array operations.
+        """
+        # ===== RHOX log-to-linear conversion (atlas7v.for lines 1141-1142) =====
+        # If RHOX(1) < 0, convert all RHOX from log scale
+        if self.RHOX is not None and self.NRHOX > 0:
+            if float(self.RHOX[0]) < 0:
+                # Convert from log scale: RHOX = 10^RHOX (torch tensor)
+                self.RHOX = torch.from_numpy(np.power(10.0, self.RHOX.numpy()))
+        
+        # ===== Gravity processing (atlas7v.for lines 200-208) =====
+        # Convert from log scale if needed (if GRAV < 10)
+        if self.GRAV is not None and self.GRAV < 10.0:
+            self.GRAV = float(np.power(10.0, self.GRAV))
+        
+        # Compute log gravity from linear gravity
+        if self.GRAV is not None and self.GRAV > 0:
+            self.GLOG = float(np.log10(self.GRAV))
+        
+        # ===== Flux from effective temperature (atlas7v.for line 100) =====
+        if self.TEFF is not None:
+            self.FLUX = Physics.stefan_boltzmann(self.TEFF)
+        
+        # ===== Initialize scalar pressure parameters (atlas7v.for lines 1143-1145) =====
+        # PRADK0=0. (or already read), PTURB0=PTURB(1), PCON=0., PZER0=PCON+PRADK0+PTURB0
+        if self.PRADK0 is None:
+            self.PRADK0 = 0.0
+        
+        if self.PCON is None:
+            self.PCON = 0.0
+        
+        if self.PTURB0 is None and self.PTURB is not None:
+            self.PTURB0 = float(self.PTURB[0])
+        elif self.PTURB0 is None:
+            self.PTURB0 = 0.0
+        
+        # PZER0 = PCON + PRADK0 + PTURB0
+        self.PZERO = float(self.PCON + self.PRADK0 + self.PTURB0)
+        
+        # ===== Per-depth radiation pressure (atlas7v.for line 1145) =====
+        # Simple addition: PRADK(J) = PRAD(J) + PRADK0
+        # PRAD is always a torch tensor
+        if self.PRADK0 is not None and self.PRAD is not None:
+            self.PRADK = self.PRAD + self.PRADK0
     

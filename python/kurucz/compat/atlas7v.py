@@ -64,3 +64,5 @@ class Atlas7v:
             print(f"Pressure at photosphere: {atm.P[0]} dyne/cm²")
         """
         return self.reader.read_model(filepath)
+
+
