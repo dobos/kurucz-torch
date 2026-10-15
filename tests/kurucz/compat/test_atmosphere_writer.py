@@ -44,8 +44,8 @@ class TestAtmosphereWriter(TestCase):
             temp_filename = f.name
 
         try:
-            writer = AtmosphereWriter()
-            writer.write_atmosphere(atmosphere, temp_filename)
+            with AtmosphereWriter(temp_filename) as writer:
+                writer.write_atmosphere(atmosphere)
             
             # Verify file was created and has content
             self.assertTrue(os.path.exists(temp_filename))
@@ -67,13 +67,14 @@ class TestAtmosphereWriter(TestCase):
 
     def test_write_matches_output_synthe(self):
         ground_truth_path = "/home/dobos/project/kurucz-torch/data/tests/output_synthe.out"
-        atmosphere = AtmosphereReader().read_atmosphere(ground_truth_path)
+        atmosphere = AtmosphereReader(ground_truth_path).read_atmosphere()
 
         with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".out") as handle:
             output_path = handle.name
 
         try:
-            AtmosphereWriter().write_atmosphere(atmosphere, output_path)
+            with AtmosphereWriter(output_path) as writer:
+                writer.write_atmosphere(atmosphere)
             with open(ground_truth_path, "r") as expected_handle:
                 expected_text = expected_handle.read()
             with open(output_path, "r") as actual_handle:

@@ -5,8 +5,8 @@ from kurucz.compat.atmospherereader import AtmosphereReader
 
 class TestAtmosphereReader(TestCase):
     def test_read_output_synthe(self):
-        reader = AtmosphereReader()
-        atmosphere = reader.read_atmosphere("/home/dobos/project/kurucz-torch/data/tests/output_synthe.out")
+        reader = AtmosphereReader("/home/dobos/project/kurucz-torch/data/tests/output_synthe.out")
+        atmosphere = reader.read_atmosphere()
 
         self.assertEqual(atmosphere.NUMITS, 1)
         self.assertEqual(atmosphere.IFPRNT, 2)

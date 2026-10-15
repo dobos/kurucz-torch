@@ -4,12 +4,19 @@ import torch
 
 from kurucz.atmosphere import Atmosphere
 from kurucz.fortran.formattedfile import FormattedFile
+from .fileio import BaseFileIO
 
 
-class AtmosphereReader:
-    def read_atmosphere(self, filename):
-        with open(filename, "r") as handle:
-            lines = [line.rstrip("\n") for line in handle]
+class AtmosphereReader(BaseFileIO):
+    
+    def read_atmosphere(self):
+        """
+        Method to read atmosphere from file.
+        """
+        # Open file lazily
+        handle = self._open_file('r')
+        
+        lines = [line.rstrip("\n") for line in handle]
 
         def read_line(format_string, text):
             return FormattedFile(io.StringIO(text)).read(format_string)
