@@ -7,8 +7,11 @@ from kurucz.fortran.formattedfile import FormattedFile
 
 
 class TestFormattedFile(TestCase):
+    def setUp(self):
+        self.ff = FormattedFile(io.StringIO())
+
     def test_parse_repeated_field_groups(self):
-        tokens = FormattedFile.parse_format("(2(I3,F5.2))")
+        tokens, _ = self.ff._parse_sequence("(2(I3,F5.2))", 0)
         self.assertEqual(len(tokens), 4)
         self.assertEqual(tokens[0]["kind"], "I")
         self.assertEqual(tokens[1]["kind"], "F")
@@ -16,7 +19,7 @@ class TestFormattedFile(TestCase):
         self.assertEqual(tokens[3]["kind"], "F")
 
     def test_parse_hollerith_literals(self):
-        tokens = FormattedFile.parse_format("(5HTEFF ,F7.0,9H  GRAVITY,F8.5)")
+        tokens, _ = self.ff._parse_sequence("(5HTEFF ,F7.0,9H  GRAVITY,F8.5)", 0)
         self.assertEqual(tokens[0]["type"], "literal")
         self.assertEqual(tokens[0]["value"], "TEFF ")
         self.assertEqual(tokens[2]["value"], "  GRAVITY")

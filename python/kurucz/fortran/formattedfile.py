@@ -5,27 +5,32 @@ class FormattedFile:
     """A tiny file-like wrapper that reads and writes Fortran-formatted records."""
 
     def __init__(self, file_obj):
-        self.file = file_obj
+        # If file_obj is a string, treat it as a filename and open it
+        if isinstance(file_obj, str):
+            self._filename = file_obj
+            self.file = open(file_obj, 'w')
+            self._owns_file = True
+        else:
+            self.file = file_obj
+            self._owns_file = False
 
-    @staticmethod
-    def _skip_space_and_commas(text, index):
+    def _skip_space_and_commas(self, text, index):
         while index < len(text) and text[index] in " \t\r\n,":
             index += 1
         return index
 
-    @staticmethod
-    def _parse_sequence(text, start_index):
+    def _parse_sequence(self, text, start_index):
         tokens = []
         index = start_index
 
         while index < len(text):
-            index = FormattedFile._skip_space_and_commas(text, index)
+            index = self._skip_space_and_commas(text, index)
             if index >= len(text):
                 break
             if text[index] == ")":
                 return tokens, index
             if text[index] == "(":
-                nested, index = FormattedFile._parse_sequence(text, index + 1)
+                nested, index = self._parse_sequence(text, index + 1)
                 if index < len(text) and text[index] == ")":
                     index += 1
                 tokens.extend(nested)
@@ -57,7 +62,7 @@ class FormattedFile:
                     continue
                 if prefix_end < len(text) and text[prefix_end] == "(":
                     repeat = int(prefix)
-                    nested, index = FormattedFile._parse_sequence(text, prefix_end + 1)
+                    nested, index = self._parse_sequence(text, prefix_end + 1)
                     if index < len(text) and text[index] == ")":
                         index += 1
                     tokens.extend(nested * repeat)
@@ -144,8 +149,7 @@ class FormattedFile:
 
         return tokens, index
 
-    @staticmethod
-    def parse_format(format_string):
+    def parse_format(self, format_string):
         """Parse a Fortran format string into a simple token list.
 
         The parser accepts the subset of format syntax used by the Fortran sources in
@@ -163,11 +167,10 @@ class FormattedFile:
         if not fmt:
             return []
 
-        tokens, _ = FormattedFile._parse_sequence(fmt, 0)
+        tokens, _ = self._parse_sequence(fmt, 0)
         return tokens
 
-    @staticmethod
-    def _format_value(token, value):
+    def _format_value(self, token, value):
         kind = token["kind"]
         width = token["width"]
         precision = token["precision"]
@@ -191,8 +194,7 @@ class FormattedFile:
             return str(bool(value)).rjust(width)
         return str(value)
 
-    @staticmethod
-    def _read_value(token, text, index):
+    def _read_value(self, token, text, index):
         kind = token["kind"]
         width = token["width"]
         if kind == "A":
@@ -212,14 +214,13 @@ class FormattedFile:
             return None, index + width
         raise ValueError(f"Unsupported field kind: {kind!r}")
 
-    @staticmethod
-    def read_formatted(file_obj, format_string):
-        """Read a single Fortran-formatted record from a file-like object."""
-        fmt = FormattedFile.parse_format(format_string)
-        if hasattr(file_obj, "read"):
-            record = file_obj.read()
+    def read_formatted(self, format_string):
+        """Read a single Fortran-formatted record from the file."""
+        fmt = self.parse_format(format_string)
+        if hasattr(self.file, "read"):
+            record = self.file.read()
         else:
-            record = file_obj
+            record = self.file
         if record == "":
             raise EOFError("No more data to read")
         record = record.replace("\r\n", "\n").replace("\r", "\n")
@@ -321,10 +322,9 @@ class FormattedFile:
 
         return tuple(values)
 
-    @staticmethod
-    def write_formatted(file_obj, format_string, values):
+    def write_formatted(self, format_string, values):
         """Write a tuple/list of values according to a Fortran format string."""
-        fmt = FormattedFile.parse_format(format_string)
+        fmt = self.parse_format(format_string)
         if isinstance(values, (list, tuple)):
             values = list(values)
         else:
@@ -353,8 +353,8 @@ class FormattedFile:
             if token_type == "field":
                 if value_index >= len(values):
                     rendered = "".join(output)
-                    if hasattr(file_obj, "write"):
-                        file_obj.write(rendered)
+                    if hasattr(self.file, "write"):
+                        self.file.write(rendered)
                     return rendered
                 value = values[value_index]
                 value_index += 1
@@ -409,8 +409,8 @@ class FormattedFile:
             raise ValueError(f"Unsupported token type: {token_type!r}")
 
         rendered = "".join(output)
-        if hasattr(file_obj, "write"):
-            file_obj.write(rendered)
+        if hasattr(self.file, "write"):
+            self.file.write(rendered)
         return rendered
 
     @staticmethod
@@ -516,8 +516,7 @@ class FormattedFile:
         schema, _ = _parse_sequence(fmt, 0)
         return schema
 
-    @staticmethod
-    def _group_read_values(flat_values, schema):
+    def _group_read_values(self, flat_values, schema):
         values = list(flat_values)
         cursor = 0
 
@@ -554,8 +553,7 @@ class FormattedFile:
             raise ValueError("Read schema does not match parsed values")
         return tuple(grouped)
 
-    @staticmethod
-    def _flatten_write_values(structured_values, schema, return_metadata=False):
+    def _flatten_write_values(self, structured_values, schema, return_metadata=False):
         flattened = []
         cursor = 0
         values = list(structured_values)
@@ -657,11 +655,10 @@ class FormattedFile:
             index += 1
         return last_span
 
-    @staticmethod
-    def _expand_format_for_reversion_group(format_string, repetitions):
+    def _expand_format_for_reversion_group(self, format_string, repetitions):
         if repetitions <= 1:
             return format_string
-        span = FormattedFile._find_last_parenthesized_group_span(format_string)
+        span = self._find_last_parenthesized_group_span(format_string)
         if span is None:
             return format_string
         start, end = span
@@ -669,22 +666,27 @@ class FormattedFile:
         return format_string + ("/" + group_text) * (repetitions - 1)
 
     def read(self, format_string):
-        flat = FormattedFile.read_formatted(self.file, format_string)
-        schema = FormattedFile._parse_value_schema(format_string)
-        return FormattedFile._group_read_values(flat, schema)
+        flat = self.read_formatted(format_string)
+        schema = self._parse_value_schema(format_string)
+        return self._group_read_values(flat, schema)
 
     def write(self, format_string, *values):
         if len(values) == 1 and isinstance(values[0], tuple):
             payload = list(values[0])
         else:
             payload = list(values)
-        schema = FormattedFile._parse_value_schema(format_string)
-        flattened, metadata = FormattedFile._flatten_write_values(payload, schema, return_metadata=True)
-        effective_format = FormattedFile._expand_format_for_reversion_group(
+        schema = self._parse_value_schema(format_string)
+        flattened, metadata = self._flatten_write_values(payload, schema, return_metadata=True)
+        effective_format = self._expand_format_for_reversion_group(
             format_string,
             metadata["trailing_group_repetitions"],
         )
-        return FormattedFile.write_formatted(self.file, effective_format, flattened)
+        return self.write_formatted(effective_format, flattened)
+
+    def close(self):
+        """Close the underlying file if it was opened by this instance."""
+        if self._owns_file and hasattr(self.file, "close"):
+            self.file.close()
 
     def __getattr__(self, name):
         return getattr(self.file, name)
@@ -696,8 +698,7 @@ class FormattedFile:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if hasattr(self.file, "close"):
-            self.file.close()
+        self.close()
 
 
 __all__ = [
