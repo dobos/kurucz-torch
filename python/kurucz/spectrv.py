@@ -1,9 +1,13 @@
 import torch
 from typing import Optional
 from .atmosphere import Atmosphere
+from .continuumopacity import ContinuumOpacity
 from .compat.atmospherereader import AtmosphereReader
+from .compat.continuumopacityreader import ContinuumOpacityReader
 from .compat.plotparametersreader import PlotParameterReader
 from .compat.plotparameters import PlotParameters
+from .compat.spectrumparametersreader import SpectrumParametersReader
+from .compat.spectrumparameters import SpectrumParameters
 
 class Spectrv:
     """
@@ -14,23 +18,19 @@ class Spectrv:
     def __init__(self):
         self.atmosphere: Optional[Atmosphere] = None
         self.plot_parameters: Optional[PlotParameters] = None
-        # Store parameters read from file 9
-        self.WLBEG: Optional[float] = None
-        self.RESOLU: Optional[float] = None
-        self.WLEND: Optional[float] = None
-        self.LENGTH: Optional[int] = None
-        self.N: Optional[int] = None
-        self.LINOUT: Optional[int] = None
-        self.TURBV: Optional[float] = None
-        self.IFVAC: Optional[int] = None
-        
-        # Store continuum data
+        self.spectrum_parameters: Optional[SpectrumParameters] = None
+        self.continuum_opacity: Optional[ContinuumOpacity] = None
+
+        # Store continuum data (kept for compatibility with older readers/tests)
         self.NEDGE: Optional[int] = None
         self.FRQEDG: Optional[torch.Tensor] = None
         self.WLEDGE: Optional[torch.Tensor] = None
         self.CMEDGE: Optional[torch.Tensor] = None
         self.NCON: Optional[int] = None
         self.CONFRQ: Optional[torch.Tensor] = None
+        self.ASYNTH: Optional[torch.Tensor] = None
+        self.ASYNTH_DIM: int = 99
+        self.NRHOX: Optional[int] = None
         
         # Store other parameters
         self.NMU: Optional[int] = None
@@ -56,8 +56,8 @@ class Spectrv:
         """
         # The atmosphere data is read from unit 20 in FORTRAN (which is typically the atmosphere file)
         # In the original code, this is done via CALL READIN(20)
-        reader = AtmosphereReader()
-        self.atmosphere = reader.read_atmosphere(filename)
+        reader = AtmosphereReader(filename)
+        self.atmosphere = reader.read_atmosphere()
         return self.atmosphere
     
     def read_plot_parameters(self, filename: str) -> PlotParameters:
@@ -76,77 +76,73 @@ class Spectrv:
         Returns:
             PlotParameters: Object containing the plot parameters
         """
-        reader = PlotParameterReader()
-        self.plot_parameters = reader.read_plot_parameters(filename)
+        reader = PlotParameterReader(filename)
+        self.plot_parameters = reader.read_plot_parameters()
         return self.plot_parameters
         
     def read_continuum_data_from_file10(self, filename: str):
         """
         Read continuum data from file 10 (fort.10) which contains:
         NEDGE, FRQEDG, WLEDGE, CMEDGE, NCON, CONFRQ, QCONTABS, QCONTSCAT
-        
+
         This file contains unformatted binary data for continuum calculations:
         - NEDGE: Number of continuum edges
         - FRQEDG, WLEDGE, CMEDGE: Arrays of continuum edge parameters
         - NCON: Number of continuum frequencies
         - CONFRQ: Array of continuum frequencies
         - QCONTABS, QCONTSCAT: Continuum absorption and scattering data
-        
+
         Args:
             filename (str): Path to the continuum data file (typically fort.10)
         """
-        # This would read the continuum data from an unformatted binary file
-        # In the actual implementation, we would read from the file:
-        # OPEN(UNIT=10,STATUS='OLD',FORM='UNFORMATTED')
-        # READ(10)NEDGE,(FRQEDG(IEDGE),WLEDGE(IEDGE),CMEDGE(IEDGE),IEDGE=1,NEDGE)
-        # READ(10)NCON,(CONFRQ(NU),NU=1,NCON)
-        # For now, we'll just set placeholders
-        pass
-        
-    def read_spectrum_data_from_file9(self, filename: str):
+        reader = ContinuumOpacityReader(filename)
+        self.continuum_opacity = reader.read_continuum_opacity(include_frequency_grid=True)
+        self.NEDGE = self.continuum_opacity.NEDGE
+        self.FRQEDG = self.continuum_opacity.FRQEDG
+        self.WLEDGE = self.continuum_opacity.WLEDGE
+        self.CMEDGE = self.continuum_opacity.CMEDGE
+        self.NCON = self.continuum_opacity.NCON
+        self.CONFRQ = self.continuum_opacity.CONFRQ
+        return self.continuum_opacity
+
+    def read_continuum_opacity_from_file9(self, filename: str) -> ContinuumOpacity:
         """
-        Read spectrum data from file 9 (fort.9) which contains:
-        WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
-        NEDGE, FRQEDG, WLEDGE, CMEDGE
-        ASYNTH data
-        NLINES, LINDAT data
+        Read the continuum opacity edge table from file 9 immediately after the
+        spectrum header.
+
+        The FORTRAN routine reads:
+        READ(9) WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
+        READ(9) NEDGE, (FRQEDG(IEDGE), WLEDGE(IEDGE), CMEDGE(IEDGE), IEDGE=1, NEDGE)
+        """
+        reader = ContinuumOpacityReader(filename)
+        self.continuum_opacity = reader.read_continuum_opacity(
+            include_frequency_grid=False,
+            include_asynth=False,
+            mode="fort9",
+        )
+        self.NEDGE = self.continuum_opacity.NEDGE
+        self.FRQEDG = self.continuum_opacity.FRQEDG
+        self.WLEDGE = self.continuum_opacity.WLEDGE
+        self.CMEDGE = self.continuum_opacity.CMEDGE
+        self.ASYNTH = self.continuum_opacity.ASYNTH
+        self.ASYNTH_DIM = self.continuum_opacity.ASYNTH.shape[0] if self.continuum_opacity.ASYNTH is not None else 0
+        self.NRHOX = self.ASYNTH_DIM
+        return self.continuum_opacity
         
-        This file contains unformatted binary data for spectral synthesis:
-        - WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC: Spectral parameters
-        - NEDGE, FRQEDG, WLEDGE, CMEDGE: Continuum edge parameters
-        - ASYNTH: Line synthesis data for each wavelength
-        - NLINES, LINDAT: Line data for spectral lines
+    def read_spectrum_data_from_file9(self, filename: str) -> SpectrumParameters:
+        """
+        Read spectrum parameters from file 9 (fort.9), first record only:
+        WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
+
+        The file is an unformatted Fortran sequential binary stream where each
+        record is wrapped by record-length markers.
         
         Args:
-            filename (str): Path to the spectrum data file (typically fort.9)
+            filename (str): Path to the spectrum data file (typically fort.9).
+
+        Returns:
+            SpectrumParameters: Parameters from the first file-9 record.
         """
-        # This would read the spectrum data from an unformatted binary file
-        # In the actual implementation, we would read from the file:
-        # READ(9)WLBEG,RESOLU,WLEND,LENGTH,N,LINOUT,TURBV,IFVAC
-        # READ(9)NEDGE,(FRQEDG(IEDGE),WLEDGE(IEDGE),CMEDGE(IEDGE),IEDGE=1,NEDGE)
-        # For now, we'll just set placeholders
-        pass
-        
-    def read_spectrum_data_from_file9(self, filename: str):
-        """
-        Read spectrum data from file 9 (fort.9) which contains:
-        WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
-        NEDGE, FRQEDG, WLEDGE, CMEDGE
-        ASYNTH data
-        NLINES, LINDAT data
-        
-        This file contains unformatted binary data for spectral synthesis:
-        - WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC: Spectral parameters
-        - NEDGE, FRQEDG, WLEDGE, CMEDGE: Continuum edge parameters
-        - ASYNTH: Line synthesis data for each wavelength
-        - NLINES, LINDAT: Line data for spectral lines
-        
-        Args:
-            filename (str): Path to the spectrum data file (typically fort.9)
-        """
-        # This would read the spectrum data from an unformatted binary file
-        # In the actual implementation, we would read from the file:
-        # READ(9)WLBEG,RESOLU,WLEND,LENGTH,N,LINOUT,TURBV,IFVAC
-        # READ(9)NEDGE,(FRQEDG(IEDGE),WLEDGE(IEDGE),CMEDGE(IEDGE),IEDGE=1,NEDGE)
-        # For now, we'll just set placeholders
-        pass
+        reader = SpectrumParametersReader(filename)
+        self.spectrum_parameters = reader.read_spectrum_parameters()
+        return self.spectrum_parameters

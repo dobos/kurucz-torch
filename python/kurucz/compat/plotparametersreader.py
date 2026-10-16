@@ -23,16 +23,7 @@ class PlotParameterReader(BaseFileIO):
         Returns:
             PlotParameters: Object containing the plot parameters
         """
-        # Create a new instance with the file source to handle it properly
-        reader = PlotParameterReader(self._file_source)
-        with reader:
-            return reader._read_plot_parameters_internal()
-    
-    def _read_plot_parameters_internal(self) -> PlotParameters:
-        """
-        Internal method to read plot parameters from file.
-        This is called from the context manager.
-        """
+
         # Open file lazily
         handle = self._open_file('r')
         content = handle.read()

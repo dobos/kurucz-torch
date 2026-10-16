@@ -2,6 +2,8 @@ import torch
 from dataclasses import dataclass, field
 from typing import Optional, List
 
+from .continuumopacity import ContinuumOpacity
+
 @dataclass
 class Atmosphere:
     """
@@ -36,7 +38,10 @@ class Atmosphere:
     
     # Title identifier
     TITLE: Optional[str] = None
-    
+
+    # Continuum opacity edge table loaded from tape 9
+    continuum_opacity: Optional[ContinuumOpacity] = None
+
     # Additional parameters needed for writing output
     IFOP: Optional[List[int]] = None
     IFCONV: Optional[int] = None
