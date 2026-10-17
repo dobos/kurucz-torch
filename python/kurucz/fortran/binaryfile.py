@@ -10,8 +10,7 @@ class BinaryFile:
         # can pass mode="wb" explicitly.
         if isinstance(file_obj, str):
             self._filename = file_obj
-            if mode is None:
-                mode = "rb"
+            mode = mode if mode is not None else "rb"
             self.file = open(file_obj, mode)
             self._owns_file = True
         else:

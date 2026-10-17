@@ -4,6 +4,7 @@ from typing import Optional, List
 
 from .continuumopacity import ContinuumOpacity
 
+
 @dataclass
 class Atmosphere:
     """

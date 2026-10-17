@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 import os
+import io
 from kurucz.compat.plotparametersreader import PlotParameterReader
 from kurucz.compat.plotparameters import PlotParameters
 
@@ -34,25 +35,18 @@ class TestPlotParameters(unittest.TestCase):
         # Create a temporary file with the same format as FORTRAN: 8F10.5
         # Each number should be 10 characters wide with 5 decimal places
         test_content = "    1.00000    2.00000    3.00000    4.00000    5.00000    6.00000    7.00000    8.00000"
+                    
+        reader = PlotParameterReader(io.StringIO(test_content))
+        params = reader.read_plot_parameters()
         
-        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt') as f:
-            f.write(test_content)
-            temp_filename = f.name
-            
-        try:
-            reader = PlotParameterReader(temp_filename)
-            params = reader.read_plot_parameters()
-            
-            self.assertEqual(params.RHOXJ, 1.0)
-            self.assertEqual(params.R1, 2.0)
-            self.assertEqual(params.R101, 3.0)
-            self.assertEqual(params.PH1, 4.0)
-            self.assertEqual(params.PC1, 5.0)
-            self.assertEqual(params.PSI1, 6.0)
-            self.assertEqual(params.PRDDOP, 7.0)
-            self.assertEqual(params.PRDPOW, 8.0)
-        finally:
-            os.unlink(temp_filename)
+        self.assertEqual(params.RHOXJ, 1.0)
+        self.assertEqual(params.R1, 2.0)
+        self.assertEqual(params.R101, 3.0)
+        self.assertEqual(params.PH1, 4.0)
+        self.assertEqual(params.PC1, 5.0)
+        self.assertEqual(params.PSI1, 6.0)
+        self.assertEqual(params.PRDDOP, 7.0)
+        self.assertEqual(params.PRDPOW, 8.0)
 
 
 if __name__ == '__main__':

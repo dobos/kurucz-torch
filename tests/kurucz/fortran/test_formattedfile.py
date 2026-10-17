@@ -65,6 +65,15 @@ class TestFormattedFile(TestCase):
         self.assertEqual(written, "1234\nQ5678\nQ90")
         self.assertEqual(stream.getvalue(), "1234\nQ5678\nQ90")
 
+    def test_read_repeated_format_with_newline(self):
+        # Test format with repeated group containing newline tokens
+        # This tests 2(I5,/) which should read two integers from two separate lines
+        # The result should be grouped as [[12345], [67890]] due to the repeated format
+        stream = io.StringIO("12345\n67890\n")
+        ff = FormattedFile(stream)
+        result = ff.read("2(I5,/)") 
+        self.assertEqual(result, ([[12345], [67890]],))
+
     def _assert_materialized(self, format_string, record_literal, expected_values):
         stream = io.StringIO(record_literal)
         ff = FormattedFile(stream)
@@ -258,3 +267,48 @@ ABUNDANCE SCALE   1.00000 ABUNDANCE CHANGE 1 0.91183 2 0.08708
 (17H ABUNDANCE CHANGE6(I3,F7.2))"""
 
         self._assert_formatted_write(format, text, data)
+
+    def test_write_format_reversion_partial(self):
+
+        text = """TEFF   5770.  GRAVITY 4.44000     
+ABUNDANCE SCALE   1.00000 ABUNDANCE CHANGE 1 0.91183 2 0.08708
+ ABUNDANCE CHANGE  3  -8.78  4 -10.66  5  -9.25  6  -3.54  7  -4.18  8  -3.28
+ ABUNDANCE CHANGE  9  -7.48 10  -4.02 11  -5.80 12  -4.44 13  -5.59 14  -4.53
+ ABUNDANCE CHANGE 99 -20.00"""
+
+        format = """5HTEFF F7.0,9H GRAVITY F5.3,1XA4/
+16HABUNDANCE SCALE F7.3,17H ABUNDANCE CHANGE2(I2,F6.3)/
+(17H ABUNDANCE CHANGE6(I3,F7.2))"""
+
+        data = (
+            5770.0, 4.44000, '',
+            [[1, 0.91183], [2, 0.08708]],
+            [[3, -8.78], [4, -10.66], [5, -9.25], [6, -3.54], [7, -4.18], [8, -3.28]],
+            [[ 9,  -7.48], [10,  -4.02], [11,  -5.80], [12,  -4.44], [13,  -5.59], [14,  -4.53]],
+            [[99, -20.00]]
+        )
+
+        self._assert_formatted_write(format, text, data)
+
+    def test_read_format_reversion_partial(self):
+
+        text = """TEFF   5770.  GRAVITY 4.44000     
+ABUNDANCE SCALE   1.00000 ABUNDANCE CHANGE 1 0.91183 2 0.08708
+ ABUNDANCE CHANGE  3  -8.78  4 -10.66  5  -9.25  6  -3.54  7  -4.18  8  -3.28
+ ABUNDANCE CHANGE  9  -7.48 10  -4.02 11  -5.80 12  -4.44 13  -5.59 14  -4.53
+ ABUNDANCE CHANGE 99 -20.00
+"""
+
+        format = """5HTEFF F7.0,9H GRAVITY F5.3,1XA4/
+16HABUNDANCE SCALE F7.3,17H ABUNDANCE CHANGE2(I2,F6.3)/
+(17H ABUNDANCE CHANGE6(I3,F7.2))"""
+
+        data = (
+            5770.0, 4.44000, '',
+            1.0, [[1, 0.91183], [2, 0.08708]],
+            [[3, -8.78], [4, -10.66], [5, -9.25], [6, -3.54], [7, -4.18], [8, -3.28]],
+            [[ 9,  -7.48], [10,  -4.02], [11,  -5.80], [12,  -4.44], [13,  -5.59], [14,  -4.53]],
+            [[99, -20.00]]
+        )
+
+        self._assert_formatted_read(format, text, data)

@@ -7,6 +7,7 @@ from .compat.plotparameters import PlotParameters
 from .compat.spectrumparametersreader import SpectrumParametersReader
 from .compat.spectrumparameters import SpectrumParameters
 from .spectrv import Spectrv
+from .synthe import Synthe
 
 __all__ = [
     "Atmosphere",
@@ -18,4 +19,5 @@ __all__ = [
     "SpectrumParameters",
     "SpectrumParametersReader",
     "Spectrv",
+    "Synthe",
 ]

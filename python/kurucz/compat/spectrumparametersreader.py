@@ -25,6 +25,7 @@ class SpectrumParametersReader(BaseFileIO):
         handle = self._open_file("rb")
         binary_file = BinaryFile(handle)
 
+        # spectrv.patched.for:223
         binary_file.start_record()
         parameters = SpectrumParameters(
             WLBEG=binary_file.read_double(),

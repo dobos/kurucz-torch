@@ -14,6 +14,13 @@ class Spectrv:
     Spectrv class to read and process stellar atmosphere data for spectral synthesis.
     Based on the FORTRAN SPECTRV program from ATLAS.
     """
+
+    # TODO:
+    # read spectrum parameters from 25
+    # read tape 9
+    # read tape 10
+    # read tape 20 (atmosphere)
+    # read tape 20 (lines)
     
     def __init__(self):
         self.atmosphere: Optional[Atmosphere] = None
@@ -113,13 +120,12 @@ class Spectrv:
         The FORTRAN routine reads:
         READ(9) WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
         READ(9) NEDGE, (FRQEDG(IEDGE), WLEDGE(IEDGE), CMEDGE(IEDGE), IEDGE=1, NEDGE)
+        
+        Note: The spectrum parameters are now read separately by SpectrumParametersReader.
+        This function only reads the continuum edge data from file 9.
         """
         reader = ContinuumOpacityReader(filename)
-        self.continuum_opacity = reader.read_continuum_opacity(
-            include_frequency_grid=False,
-            include_asynth=False,
-            mode="fort9",
-        )
+        self.continuum_opacity = reader.read_continuum_edge_data_from_file9(filename)
         self.NEDGE = self.continuum_opacity.NEDGE
         self.FRQEDG = self.continuum_opacity.FRQEDG
         self.WLEDGE = self.continuum_opacity.WLEDGE

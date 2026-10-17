@@ -1,18 +1,23 @@
 import re
-
+import io
 
 class FormattedFile:
     """A tiny file-like wrapper that reads and writes Fortran-formatted records."""
 
-    def __init__(self, file_obj):
+    def __init__(self, file_obj, mode=None):
         # If file_obj is a string, treat it as a filename and open it
         if isinstance(file_obj, str):
             self._filename = file_obj
-            self.file = open(file_obj, 'w')
+            mode = mode if mode is not None else "r"
+            self.file = open(file_obj, mode)
             self._owns_file = True
         else:
             self.file = file_obj
             self._owns_file = False
+
+        # Wrap file into text reader
+        if not isinstance(self.file, io.TextIOBase):
+            self.file = io.TextIOWrapper(self.file)
 
     def _skip_space_and_commas(self, text, index):
         while index < len(text) and text[index] in " \t\r\n,":
@@ -216,13 +221,32 @@ class FormattedFile:
 
     def read_formatted(self, format_string):
         """Read a single Fortran-formatted record from the file."""
+
         fmt = self.parse_format(format_string)
-        if hasattr(self.file, "read"):
-            record = self.file.read()
-        else:
-            record = self.file
-        if record == "":
+        
+        # Read the entire record first, handling newlines properly
+        record = ""
+        line = self.file.readline()
+        if line == "":
             raise EOFError("No more data to read")
+        record = line
+        
+        # Keep reading lines until we encounter a newline token or reach end of file
+        # This handles the case where a record spans multiple lines
+        for token in fmt:
+            if token["type"] == "newline":
+                # If we encounter a newline token, read the next line
+                line = self.file.readline()
+                if line == "":
+                    break
+                record += line
+                # Continue reading lines until we find a non-empty line or end of file
+                while line.strip() == "":
+                    line = self.file.readline()
+                    if line == "":
+                        break
+                    record += line
+
         record = record.replace("\r\n", "\n").replace("\r", "\n")
 
         values = []
@@ -245,10 +269,8 @@ class FormattedFile:
                 position += token["count"]
                 continue
             if token_type == "newline":
-                while position < len(record) and record[position] != "\n":
-                    position += 1
-                if position < len(record) and record[position] == "\n":
-                    position += 1
+                # Skip to next line when encountering newline token
+                # This is a bit tricky - we just advance past any existing newlines
                 while position < len(record) and record[position] == "\n":
                     position += 1
                 continue

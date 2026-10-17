@@ -55,6 +55,12 @@ class ContinuumOpacity:
     # Continuum frequency grid used for the tabulated absorption/scattering values.
     CONFRQ: Optional[torch.Tensor] = None
 
+    # Continuum absorption values for each atmospheric layer.
+    QCONTABS: Optional[torch.Tensor] = None
+
+    # Continuum scattering values for each atmospheric layer.
+    QCONTSCAT: Optional[torch.Tensor] = None
+
     # Stack of per-layer opacity vectors for successive wavelength samples.
     # In spectrv.patched.for this is read inside the loop DO 25 NU=NULO,NUHI:
     #   READ(9)ASYNTH
