@@ -66,11 +66,14 @@ class FormattedFile:
                     index = prefix_end + 1 + length
                     continue
                 if prefix_end < len(text) and text[prefix_end] == "(":
+                    # Handle repeated format like 2(I3,F5.2)
                     repeat = int(prefix)
                     nested, index = self._parse_sequence(text, prefix_end + 1)
                     if index < len(text) and text[index] == ")":
                         index += 1
-                    tokens.extend(nested * repeat)
+                    # Expand the repeated group immediately
+                    for _ in range(repeat):
+                        tokens.extend(nested)
                     continue
 
                 if prefix_end < len(text):
@@ -252,27 +255,36 @@ class FormattedFile:
         values = []
         position = 0
         token_count = len(fmt)
-        for token_index, token in enumerate(fmt):
+        token_index = 0
+        
+        while token_index < len(fmt):
+            token = fmt[token_index]
             token_type = token["type"]
+            
             if token_type == "literal":
                 literal = token["value"]
                 if position + len(literal) > len(record):
-                    raise ValueError(f"Hollerith literal {literal!r} does not fit the record")
+                    # Trailing repeated groups may legally stop before the next literal
+                    # is fully present; treat the remaining record as exhausted.
+                    break
                 actual = record[position : position + len(literal)]
                 if actual != literal:
                     # allow the common case where the record contains a trailing space
                     if actual.strip() != literal.strip():
                         raise ValueError(f"Expected literal {literal!r}, got {actual!r}")
                 position += len(literal)
+                token_index += 1
                 continue
             if token_type == "skip":
                 position += token["count"]
+                token_index += 1
                 continue
             if token_type == "newline":
                 # Skip to next line when encountering newline token
                 # This is a bit tricky - we just advance past any existing newlines
                 while position < len(record) and record[position] == "\n":
                     position += 1
+                token_index += 1
                 continue
             if token_type == "field":
                 field = token["kind"]
@@ -333,10 +345,13 @@ class FormattedFile:
                 else:
                     raise ValueError(f"Unsupported formatted field type: {field!r}")
                 position += len(piece)
+                token_index += 1
                 continue
             if token_type == "scale":
+                token_index += 1
                 continue
             if token_type == "sign":
+                token_index += 1
                 continue
             if token_type == "stop":
                 break
@@ -355,20 +370,28 @@ class FormattedFile:
         output = []
         value_index = 0
         token_count = len(fmt)
-        for token_index, token in enumerate(fmt):
+        token_index = 0
+        
+        while token_index < len(fmt):
+            token = fmt[token_index]
             token_type = token["type"]
             if token_type == "literal":
                 output.append(token["value"])
+                token_index += 1
                 continue
             if token_type == "skip":
                 output.append(" " * token["count"])
+                token_index += 1
                 continue
             if token_type == "newline":
                 output.append("\n")
+                token_index += 1
                 continue
             if token_type == "scale":
+                token_index += 1
                 continue
             if token_type == "sign":
+                token_index += 1
                 continue
             if token_type == "stop":
                 break
@@ -427,6 +450,7 @@ class FormattedFile:
                 else:
                     raise ValueError(f"Unsupported field kind: {kind!r}")
                 output.append(field)
+                token_index += 1
                 continue
             raise ValueError(f"Unsupported token type: {token_type!r}")
 
@@ -536,11 +560,58 @@ class FormattedFile:
             return schema, index
 
         schema, _ = _parse_sequence(fmt, 0)
+        if schema and schema[-1]["type"] == "group" and len(schema) > 1:
+            schema[-1] = {"type": "repeat_group", "repeat": None, "items": schema[-1]["items"]}
         return schema
 
     def _group_read_values(self, flat_values, schema):
         values = list(flat_values)
         cursor = 0
+
+        def _flatten_item_count(value):
+            if isinstance(value, (list, tuple)):
+                total = 0
+                for item in value:
+                    total += _flatten_item_count(item)
+                return total
+            return 1
+
+        def _base_group_size(items):
+            for item in items:
+                item_type = item["type"]
+                if item_type == "scalar":
+                    return 1
+                if item_type == "repeat_field":
+                    return 1
+                if item_type == "repeat_group":
+                    if item["repeat"] is None:
+                        return _base_group_size(item["items"])
+                    return _base_group_size(item["items"])
+                if item_type == "group":
+                    return _base_group_size(item["items"])
+            return 0
+
+        def _consume_group_size(items):
+            total = 0
+            for item in items:
+                item_type = item["type"]
+                if item_type == "scalar":
+                    total += 1
+                    continue
+                if item_type == "repeat_field":
+                    total += item["repeat"]
+                    continue
+                if item_type == "repeat_group":
+                    repeat = item["repeat"]
+                    if repeat is None:
+                        return _consume_group_size(item["items"])
+                    total += _consume_group_size(item["items"]) * repeat
+                    continue
+                if item_type == "group":
+                    total += _consume_group_size(item["items"])
+                    continue
+                raise ValueError(f"Unsupported schema token type: {item_type!r}")
+            return total
 
         def _consume_sequence(items):
             nonlocal cursor
@@ -548,19 +619,56 @@ class FormattedFile:
             for item in items:
                 item_type = item["type"]
                 if item_type == "scalar":
+                    if cursor >= len(values):
+                        break
                     consumed.append(values[cursor])
                     cursor += 1
                     continue
                 if item_type == "repeat_field":
                     repeat = item["repeat"]
+                    if cursor + repeat > len(values):
+                        break
                     consumed.append(values[cursor : cursor + repeat])
                     cursor += repeat
                     continue
                 if item_type == "repeat_group":
                     repeat = item["repeat"]
                     grouped = []
+                    expected_size = _consume_group_size(item["items"])
+                    base_size = _base_group_size(item["items"])
+                    if repeat is None:
+                        while cursor < len(values):
+                            before = cursor
+                            chunk = _consume_sequence(item["items"])
+                            if cursor == before or not chunk:
+                                break
+                            chunk_size = _flatten_item_count(chunk)
+                            if chunk_size < base_size:
+                                cursor = before
+                                break
+                            if len(values) - cursor < base_size:
+                                if len(chunk) == 1 and isinstance(chunk[0], (list, tuple)):
+                                    chunk = chunk[0]
+                                grouped.append(chunk)
+                                break
+                            if len(chunk) == 1 and isinstance(chunk[0], (list, tuple)):
+                                chunk = chunk[0]
+                            grouped.append(chunk)
+                        consumed.extend(grouped)
+                        continue
                     for _ in range(repeat):
-                        grouped.append(_consume_sequence(item["items"]))
+                        if cursor >= len(values):
+                            break
+                        before = cursor
+                        chunk = _consume_sequence(item["items"])
+                        if cursor == before or not chunk:
+                            break
+                        if _flatten_item_count(chunk) < expected_size:
+                            cursor = before
+                            break
+                        if len(chunk) == 1 and isinstance(chunk[0], (list, tuple)):
+                            chunk = chunk[0]
+                        grouped.append(chunk)
                     consumed.append(grouped)
                     continue
                 if item_type == "group":
@@ -572,68 +680,70 @@ class FormattedFile:
 
         grouped = _consume_sequence(schema)
         if cursor != len(values):
-            raise ValueError("Read schema does not match parsed values")
+            if not (schema and schema[-1]["type"] == "repeat_group" and schema[-1]["repeat"] is None):
+                raise ValueError("Read schema does not match parsed values")
         return tuple(grouped)
 
     def _flatten_write_values(self, structured_values, schema, return_metadata=False):
-        flattened = []
-        cursor = 0
         values = list(structured_values)
+        flattened = []
         trailing_group_repetitions = 0
 
-        def _flatten_sequence(items, source):
-            nonlocal cursor
-            if len(items) == 1:
-                local_values = [source]
-            else:
-                local_values = list(source)
-                if len(local_values) != len(items):
-                    raise ValueError("Repeated group payload length does not match format")
-            local_cursor = 0
-            for item in items:
-                item_type = item["type"]
-                local_value = local_values[local_cursor]
-                local_cursor += 1
-                if item_type == "scalar":
-                    flattened.append(local_value)
-                    continue
-                if item_type == "repeat_field":
-                    repeat = item["repeat"]
-                    chunk = list(local_value)
-                    if len(chunk) > repeat:
-                        raise ValueError("Repeated field payload length does not match format")
-                    flattened.extend(chunk)
-                    continue
-                if item_type == "repeat_group":
-                    repeat = item["repeat"]
-                    groups = list(local_value)
-                    if len(groups) > repeat:
-                        raise ValueError("Repeated group payload count does not match format")
-                    for group_values in groups:
-                        _flatten_sequence(item["items"], group_values)
-                    continue
-                if item_type == "group":
-                    _flatten_sequence(item["items"], local_value)
-                    continue
-                raise ValueError(f"Unsupported schema token type: {item_type!r}")
+        def _flatten_tree(payload):
+            if isinstance(payload, (list, tuple)):
+                out = []
+                for item in payload:
+                    out.extend(_flatten_tree(item))
+                return out
+            return [payload]
 
+        def _as_group_list(value):
+            if value is None:
+                return []
+            if isinstance(value, (list, tuple)):
+                return list(value)
+            return [value]
+
+        value_index = 0
         for item in schema:
-            if cursor >= len(values):
-                raise ValueError("Not enough values for grouped write")
-            source = values[cursor]
-            cursor += 1
-            _flatten_sequence([item], source)
-            if item is schema[-1] and item["type"] == "group":
-                trailing_group_repetitions = 1
+            if item["type"] == "scalar":
+                if value_index >= len(values):
+                    raise ValueError("Not enough values for grouped write")
+                flattened.append(values[value_index])
+                value_index += 1
+                continue
+            if item["type"] == "repeat_field":
+                if value_index >= len(values):
+                    raise ValueError("Not enough values for grouped write")
+                chunk = _as_group_list(values[value_index])
+                flattened.extend(chunk[: item["repeat"]])
+                value_index += 1
+                continue
+            if item["type"] == "repeat_group":
+                if item["repeat"] is None:
+                    while value_index < len(values):
+                        group = values[value_index]
+                        flattened.extend(_flatten_tree(group))
+                        trailing_group_repetitions += 1
+                        value_index += 1
+                    break
+                if value_index >= len(values):
+                    raise ValueError("Not enough values for grouped write")
+                groups = _as_group_list(values[value_index])
+                for group in groups[: item["repeat"]]:
+                    flattened.extend(_flatten_tree(group))
+                value_index += 1
+                continue
+            if item["type"] == "group":
+                if value_index >= len(values):
+                    raise ValueError("Not enough values for grouped write")
+                flattened.extend(_flatten_tree(values[value_index]))
+                value_index += 1
+                continue
+            raise ValueError(f"Unsupported schema token type: {item['type']!r}")
 
-        if cursor != len(values):
-            if schema and schema[-1]["type"] == "group":
-                trailing = schema[-1]
-                while cursor < len(values):
-                    _flatten_sequence([trailing], values[cursor])
-                    cursor += 1
-                    trailing_group_repetitions += 1
-            else:
+        if value_index != len(values):
+            if not (schema and schema[-1]["type"] == "repeat_group" and schema[-1]["repeat"] is None):
                 raise ValueError("Too many values for grouped write")
 
         if return_metadata:
@@ -685,11 +795,16 @@ class FormattedFile:
             return format_string
         start, end = span
         group_text = format_string[start : end + 1]
+        # For format reversion, we repeat the last group to match the data
+        # But we need to be careful about the structure
         return format_string + ("/" + group_text) * (repetitions - 1)
 
     def read(self, format_string):
-        flat = self.read_formatted(format_string)
         schema = self._parse_value_schema(format_string)
+        if schema and schema[-1]["type"] == "repeat_group" and schema[-1]["repeat"] is None:
+            flat = self.read_formatted(self._expand_format_for_reversion_group(format_string, 1000))
+            return self._group_read_values(flat, schema)
+        flat = self.read_formatted(format_string)
         return self._group_read_values(flat, schema)
 
     def write(self, format_string, *values):

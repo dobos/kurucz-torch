@@ -87,6 +87,7 @@ class TestLineListReader(unittest.TestCase):
             continuum_opacity = continuum_reader.read_continuum_opacity(
                 include_asynth=True,
                 mode="fort9",
+                nwave=spectrum_params.LENGTH,
             )
             
             # Now read the line list (as done in Fortran program)

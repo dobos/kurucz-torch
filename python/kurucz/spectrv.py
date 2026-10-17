@@ -114,18 +114,14 @@ class Spectrv:
 
     def read_continuum_opacity_from_file9(self, filename: str) -> ContinuumOpacity:
         """
-        Read the continuum opacity edge table from file 9 immediately after the
-        spectrum header.
+        Read the opacity-edge table from a file-9 binary stream.
 
-        The FORTRAN routine reads:
-        READ(9) WLBEG, RESOLU, WLEND, LENGTH, N, LINOUT, TURBV, IFVAC
-        READ(9) NEDGE, (FRQEDG(IEDGE), WLEDGE(IEDGE), CMEDGE(IEDGE), IEDGE=1, NEDGE)
-        
-        Note: The spectrum parameters are now read separately by SpectrumParametersReader.
-        This function only reads the continuum edge data from file 9.
+        This method is kept for compatibility with the older API. It only reads the
+        edge table and does not try to parse the ASYNTH vectors unless the caller uses
+        the underlying ContinuumOpacityReader directly with an explicit nwave.
         """
         reader = ContinuumOpacityReader(filename)
-        self.continuum_opacity = reader.read_continuum_edge_data_from_file9(filename)
+        self.continuum_opacity = reader.read_continuum_edge_data_from_file9()
         self.NEDGE = self.continuum_opacity.NEDGE
         self.FRQEDG = self.continuum_opacity.FRQEDG
         self.WLEDGE = self.continuum_opacity.WLEDGE

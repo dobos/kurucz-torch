@@ -70,8 +70,15 @@ class AtmosphereReader(BaseFileIO):
             abundance_pairs = {int(index): float(value) for index, value in abundance_pairs_12}
             while len(abundance_pairs) < 99:
                 # Read abundance change values using read_formatted for the complex
-                # repeated format that has issues with read() due to parsing bugs
+                # repeated format that has issues with read() due to parsing bugs.
+                # The final partial record may end with a dangling scalar because the
+                # reader treats the missing trailing field as zero; ignore the final
+                # unmatched item so we only process complete (index, value) pairs.
                 abundance_change_values = f.read_formatted("17H ABUNDANCE CHANGE,6(I3,F7.2)")
+                if not abundance_change_values:
+                    break
+                if len(abundance_change_values) % 2 != 0:
+                    abundance_change_values = abundance_change_values[:-1]
                 # Process pairs from the flat list of values
                 for i in range(0, len(abundance_change_values), 2):
                     abundance_index = int(abundance_change_values[i])
